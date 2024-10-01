@@ -1,111 +1,144 @@
--- Wrath of Nephthys
+-- Nephthys Shrine of Reincarnation
 local s,id=GetID()
 function s.initial_effect(c)
-    -- Activate "Nephthys" Spell/Trap from hand
+    -- Activate WIND "Nephthys" Ritual Monsters' effects as Quick Effects in GY
     local e1=Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
     e1:SetCode(EFFECT_QP_ACT_IN_NTPHAND)
-    e1:SetRange(LOCATION_MZONE)
-    e1:SetTarget(aux.TargetBoolFunction(Card.IsSetCard,0x11f))
-    e1:SetTargetRange(LOCATION_HAND,0)
-    e1:SetCondition(s.actcon)
+    e1:SetRange(LOCATION_SZONE)
+    e1:SetTargetRange(LOCATION_GRAVE,0)
+    e1:SetTarget(s.qetg)
     c:RegisterEffect(e1)
-    local e2=e1:Clone()
-    e2:SetCode(EFFECT_TRAP_ACT_IN_HAND)
+
+    -- If you control a monster in the Extra Monster Zone that is not a "Nephthys" monster, banish this card and all monsters you control
+    local e2=Effect.CreateEffect(c)
+    e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+    e2:SetRange(LOCATION_SZONE)
+    e2:SetCode(EVENT_ADJUST)
+    e2:SetCondition(s.rmcon)
+    e2:SetOperation(s.rmop)
     c:RegisterEffect(e2)
-    
-    -- Destroy 1 monster in hand or field and Special Summon 1 "Nephthys" Spellcaster
+
+    -- Destroy 1 card in your hand, OR if destroyed by card effect, add 1 "Nephthys" Spell/Trap
     local e3=Effect.CreateEffect(c)
-    e3:SetCategory(CATEGORY_DESTROY+CATEGORY_SPECIAL_SUMMON)
+    e3:SetCategory(CATEGORY_DESTROY+CATEGORY_TOHAND+CATEGORY_SEARCH)
     e3:SetType(EFFECT_TYPE_IGNITION)
-    e3:SetRange(LOCATION_MZONE)
-    e3:SetCountLimit(1)
-    e3:SetTarget(s.sptg)
-    e3:SetOperation(s.spop)
+    e3:SetRange(LOCATION_SZONE)
+    e3:SetCountLimit(1,id)
+    e3:SetTarget(s.destg)
+    e3:SetOperation(s.desop)
     c:RegisterEffect(e3)
-    
-    -- Destroy card and Special Summon from Extra Deck or GY
+
+    -- If destroyed by card effect, add 1 "Nephthys" Spell/Trap from Deck to hand
     local e4=Effect.CreateEffect(c)
-    e4:SetCategory(CATEGORY_DESTROY+CATEGORY_SPECIAL_SUMMON)
-    e4:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
-    e4:SetCode(EVENT_SPSUMMON_SUCCESS)
-    e4:SetRange(LOCATION_MZONE)
-    e4:SetCondition(s.descon)
-    e4:SetTarget(s.destg)
-    e4:SetOperation(s.desop)
+    e4:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)
+    e4:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+    e4:SetCode(EVENT_DESTROYED)
+    e4:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY)
+    e4:SetCondition(s.thcon)
+    e4:SetCost(s.thcost)
+    e4:SetTarget(s.thtg)
+    e4:SetOperation(s.thop)
     c:RegisterEffect(e4)
-    
-    -- Cannot control more than 1 "Wrath of Nephthys"
-    c:SetUniqueOnField(1,0,id)
+
+    -- Special Summon 1 "Nephthys" monster if a card in hand or field is destroyed
+    local e5=Effect.CreateEffect(c)
+    e5:SetCategory(CATEGORY_SPECIAL_SUMMON)
+    e5:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
+    e5:SetCode(EVENT_DESTROYED)
+    e5:SetProperty(EFFECT_FLAG_DELAY)
+    e5:SetRange(LOCATION_SZONE)
+    e5:SetCountLimit(1,id+100)
+    e5:SetCondition(s.spcon)
+    e5:SetTarget(s.sptg)
+    e5:SetOperation(s.spop)
+    c:RegisterEffect(e5)
 end
 
--- Condition to activate Spell/Trap from hand
-function s.actcon(e)
-    return Duel.IsMainPhase()
+-- e1: Activate WIND "Nephthys" Ritual Monsters' effects as Quick Effects from the GY
+function s.qetg(e,c)
+    return c:IsSetCard(0x11f) and c:IsType(TYPE_RITUAL) and c:IsAttribute(ATTRIBUTE_WIND)
 end
 
--- Destroy target and Special Summon from Deck
-function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
-    if chk==0 then return Duel.IsExistingMatchingCard(aux.TRUE,tp,LOCATION_HAND+LOCATION_ONFIELD,0,1,nil)
-        and Duel.GetLocationCount(tp,LOCATION_MZONE)>0
-        and Duel.IsExistingMatchingCard(s.spfilter,tp,LOCATION_DECK,0,1,nil,e,tp) end
-    Duel.SetOperationInfo(0,CATEGORY_DESTROY,nil,1,tp,LOCATION_HAND+LOCATION_ONFIELD)
-    Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_DECK)
+-- e2: If you control a monster in the Extra Monster Zone that is not a "Nephthys" monster, banish this card and all monsters you control
+function s.rmcon(e,tp,eg,ep,ev,re,r,rp)
+    return Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)>0
+        and Duel.GetFieldGroupCount(tp,LOCATION_MZONE,LOCATION_MZONE)==1
+        and Duel.IsExistingMatchingCard(aux.NOT(Card.IsSetCard),tp,LOCATION_MZONE,LOCATION_MZONE,1,nil,0x11f)
 end
 
-function s.spfilter(c,e,tp)
-    return c:IsSetCard(0x11f) and c:IsType(TYPE_SPELLCASTER) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+function s.rmop(e,tp,eg,ep,ev,re,r,rp)
+    Duel.Banish(e:GetHandler(),REASON_EFFECT)
+    Duel.Banish(Duel.GetFieldGroup(tp,LOCATION_MZONE,0),REASON_EFFECT)
 end
 
-function s.spop(e,tp,eg,ep,ev,re,r,rp)
-    Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_DESTROY)
-    local g=Duel.SelectMatchingCard(tp,aux.TRUE,tp,LOCATION_HAND+LOCATION_ONFIELD,0,1,1,nil)
-    if #g>0 and Duel.Destroy(g,REASON_EFFECT)~=0 then
-        Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-        local sg=Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_DECK,0,1,1,nil,e,tp)
-        if #sg>0 then
-            Duel.SpecialSummon(sg,0,tp,tp,false,false,POS_FACEUP)
+-- e3: Destroy 1 card in hand OR add 1 "Nephthys" Spell/Trap if destroyed by a card effect
+function s.destg(e,tp,eg,ep,ev,re,r,rp,chk)
+    if chk==0 then return Duel.IsExistingMatchingCard(nil,tp,LOCATION_HAND,0,1,nil) end
+    Duel.SetOperationInfo(0,CATEGORY_DESTROY,nil,1,tp,LOCATION_HAND)
+end
+
+function s.desop(e,tp,eg,ep,ev,re,r,rp)
+    if e:GetHandler():IsRelateToEffect(e) then
+        Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_DESTROY)
+        local g=Duel.SelectMatchingCard(tp,nil,tp,LOCATION_HAND,0,1,1,nil)
+        if #g>0 then
+            Duel.Destroy(g,REASON_EFFECT)
         end
     end
 end
 
--- Trigger for Ritual summon condition
-function s.cfilter(c,tp)
-    return c:IsSetCard(0x11f) and c:IsType(TYPE_RITUAL) and c:IsSummonType(SUMMON_TYPE_RITUAL) and c:IsControler(tp)
+-- e4: Add 1 "Nephthys" Spell/Trap from Deck to hand if destroyed by card effect
+function s.thcon(e,tp,eg,ep,ev,re,r,rp)
+    return r&REASON_EFFECT~=0
 end
 
-function s.descon(e,tp,eg,ep,ev,re,r,rp)
-    return eg:IsExists(s.cfilter,1,nil,tp)
+function s.thcost(e,tp,eg,ep,ev,re,r,rp,chk)
+    if chk==0 then return Duel.CheckLPCost(tp,1000) end
+    Duel.PayLPCost(tp,1000)
 end
 
--- Destroy and Special Summon from Extra Deck or GY
-function s.destg(e,tp,eg,ep,ev,re,r,rp,chk)
-    if chk==0 then return Duel.IsExistingMatchingCard(s.extrafilter,tp,LOCATION_EXTRA+LOCATION_GRAVE,0,1,nil,e,tp)
-        and Duel.IsExistingMatchingCard(aux.TRUE,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,nil) end
-    Duel.SetOperationInfo(0,CATEGORY_DESTROY,nil,2,0,0)
-    Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_EXTRA+LOCATION_GRAVE)
+function s.thtg(e,tp,eg,ep,ev,re,r,rp,chk)
+    if chk==0 then return Duel.IsExistingMatchingCard(s.thfilter,tp,LOCATION_DECK,0,1,nil) end
+    Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
 end
 
-function s.extrafilter(c,e,tp)
-    return c:IsSetCard(0x11f) and c:IsAttack(2400) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+function s.thfilter(c)
+    return c:IsSetCard(0x11f) and c:IsType(TYPE_SPELL+TYPE_TRAP) and c:IsAbleToHand()
 end
 
-function s.desop(e,tp,eg,ep,ev,re,r,rp)
-    Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_DESTROY)
-    local g1=Duel.SelectMatchingCard(tp,aux.TRUE,tp,LOCATION_ONFIELD,0,1,1,nil)
-    Duel.Hint(HINT_SELECTMSG,1-tp,HINTMSG_DESTROY)
-    local g2=Duel.SelectMatchingCard(1-tp,aux.TRUE,1-tp,LOCATION_ONFIELD,0,1,1,nil)
-    if #g1>0 and #g2>0 and Duel.Destroy(g1+g2,REASON_EFFECT)~=0 then
-        Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-        local sg=Duel.SelectMatchingCard(tp,s.extrafilter,tp,LOCATION_EXTRA+LOCATION_GRAVE,0,1,1,nil,e,tp)
-        if #sg>0 then
-            Duel.SpecialSummon(sg,0,tp,tp,false,false,POS_FACEUP)
-            -- Prevent the summoned monster from attacking directly
-            local e1=Effect.CreateEffect(e:GetHandler())
-            e1:SetType(EFFECT_TYPE_SINGLE)
-            e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)
-            e1:SetReset(RESET_EVENT+RESETS_STANDARD)
-            sg:GetFirst():RegisterEffect(e1)
-        end
+function s.thop(e,tp,eg,ep,ev,re,r,rp)
+    Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
+    local g=Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)
+    if #g>0 then
+        Duel.SendtoHand(g,nil,REASON_EFFECT)
+        Duel.ConfirmCards(1-tp,g)
+    end
+end
+
+-- e5: Special Summon 1 "Nephthys" monster if a card in hand or field is destroyed (except by this card's effect)
+function s.spcon(e,tp,eg,ep,ev,re,r,rp)
+    return eg:IsExists(s.spfilter,1,nil,tp) and not re or re:GetHandler()~=e:GetHandler()
+end
+
+function s.spfilter(c,tp)
+    return c:IsPreviousControler(tp) and c:IsPreviousLocation(LOCATION_HAND+LOCATION_ONFIELD)
+end
+
+function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
+    if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
+        and Duel.IsExistingMatchingCard(s.spfilter2,tp,LOCATION_HAND+LOCATION_DECK,0,1,nil,e,tp) end
+    Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND+LOCATION_DECK)
+end
+
+function s.spfilter2(c,e,tp)
+    return c:IsSetCard(0x11f) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+end
+
+function s.spop(e,tp,eg,ep,ev,re,r,rp)
+    Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
+    local g=Duel.SelectMatchingCard(tp,s.spfilter2,tp,LOCATION_HAND+LOCATION_DECK,0,1,1,nil,e,tp)
+    if #g>0 then
+        Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)
     end
 end
