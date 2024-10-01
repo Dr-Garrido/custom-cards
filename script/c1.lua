@@ -2,6 +2,13 @@
 local s,id=GetID()
 function s.initial_effect(c)
     -- Activate WIND "Nephthys" Ritual Monsters' effects as Quick Effects in GY
+    
+    -- Activate
+    local e0=Effect.CreateEffect(c)
+	e0:SetType(EFFECT_TYPE_ACTIVATE)
+	e0:SetCode(EVENT_FREE_CHAIN)
+	c:RegisterEffect(e0)
+
     local e1=Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
     e1:SetCode(EFFECT_QP_ACT_IN_NTPHAND)
