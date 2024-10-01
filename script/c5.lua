@@ -1,82 +1,55 @@
--- Nephthys Ritual Revival
+--ネフティスの輪廻
+--Rebirth of Nephthys,,,, but is RISING
 local s,id=GetID()
 function s.initial_effect(c)
-    -- Activate
-    local e0=Effect.CreateEffect(c)
-    e0:SetType(EFFECT_TYPE_ACTIVATE)
-    e0:SetCode(EVENT_FREE_CHAIN)
-    c:RegisterEffect(e0)
-    
-    -- Ritual Summon "Nephthys" Ritual Monster from GY
-    local e1=Effect.CreateEffect(c)
-    e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_DRAW)
-    e1:SetType(EFFECT_TYPE_ACTIVATE)
-    e1:SetCode(EVENT_FREE_CHAIN)
-    e1:SetCountLimit(1,id)
-    e1:SetTarget(s.target)
-    e1:SetOperation(s.activate)
-    c:RegisterEffect(e1)
+    -- Adiciona a condição para Invocação Ritual usando materiais do cemitério e da mão
+    Ritual.AddProcGreater({
+        handler=c,
+        filter=s.ritualfil,
+        stage2=s.stage2,
+        location=LOCATION_HAND|LOCATION_GRAVE
+    })
 end
 
--- Check for "Nephthys" monsters in hand or field, and "Nephthys" Link Monsters in GY
-function s.filter(c,e,tp,m1,m2,ft)
-    if not c:IsSetCard(0x11f) or not c:IsRitualMonster() or not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_RITUAL,tp,false,true) then return false end
-    local mg=m1:Clone()
-    if ft>0 then
-        mg:Merge(m2)
-    else
-        mg:RemoveCard(c)
-    end
-    return mg:CheckWithSumGreater(Card.GetRitualLevel,c:GetLevel(),c)
+s.listed_series={0x11f} -- Define a série "Nephthys"
+s.fit_monster={88176533,24175232} -- IDs dos monstros que podem ser usados como materiais
+
+-- Filtro para monstros Ritual Nephthys
+function s.ritualfil(c)
+    return c:IsSetCard(0x11f) and c:IsRitualMonster()
 end
 
--- Ritual Summon target
-function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
-    if chk==0 then
-        local mg1=Duel.GetRitualMaterial(tp)
-        local mg2=Duel.GetMatchingGroup(s.filter2,tp,LOCATION_GRAVE,0,nil)
-        return Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_GRAVE,0,1,nil,e,tp,mg1,mg2,Duel.GetLocationCount(tp,LOCATION_MZONE)>0)
-    end
-    Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)
+-- Filtro para destruir uma carta Nephthys na mão
+function s.mfilter(c)
+    return c:IsSetCard(0x11f) and c:IsAbleToGraveAsCost()
 end
 
--- Filter for Nephthys Link Monsters in the GY
-function s.filter2(c)
-    return c:IsSetCard(0x11f) and c:IsType(TYPE_LINK) and c:IsAbleToRemove()
-end
+function s.stage2(mg,e,tp,eg,ep,ev,re,r,rp)
+    -- Verifica se existem materiais válidos no cemitério
+    if mg:IsExists(s.mfilter,1,nil) then
+        -- Cria um grupo de cartas "Nephthys" na mão do jogador
+        local hand_cards = Duel.GetMatchingGroup(Card.IsSetCard,tp,LOCATION_HAND,0,nil,0x11f)
 
--- Ritual Summon operation
-function s.activate(e,tp,eg,ep,ev,re,r,rp)
-    local mg1=Duel.GetRitualMaterial(tp)
-    local mg2=Duel.GetMatchingGroup(s.filter2,tp,LOCATION_GRAVE,0,nil)
-    Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-    local tg=Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp,mg1,mg2,Duel.GetLocationCount(tp,LOCATION_MZONE)>0)
-    if #tg>0 then
-        local tc=tg:GetFirst()
-        local mg=mg1:Clone()
-        if Duel.GetLocationCount(tp,LOCATION_MZONE)>0 then
-            mg:Merge(mg2)
-        end
-        local mat=nil
-        if mg:CheckWithSumGreater(Card.GetRitualLevel,tc:GetLevel(),tc) then
-            Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_RELEASE)
-            mat=mg:SelectWithSumGreater(tp,Card.GetRitualLevel,tc:GetLevel(),tc)
-        end
-        if mat then
-            tc:SetMaterial(mat)
-            Duel.ReleaseRitualMaterial(mat)
-            Duel.SpecialSummon(tc,SUMMON_TYPE_RITUAL,tp,tp,false,true,POS_FACEUP)
-            tc:CompleteProcedure()
-            -- Check if "Connector of Nephthys" or "Sacred Phoenix of Nephthys" was destroyed
-            if mat:IsExists(s.drawfilter,1,nil) then
-                Duel.BreakEffect()
-                Duel.Draw(tp,1,REASON_EFFECT)
+        -- Verifica se há cartas "Nephthys" na mão
+        if #hand_cards > 0 and Duel.SelectYesNo(tp,aux.Stringid(id,0)) then
+            Duel.BreakEffect()
+            Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_DESTROY)
+
+            -- Seleciona uma carta "Nephthys" da mão para destruir como custo
+            local sg = hand_cards:Select(tp,1,1,nil)
+
+            -- Destrói a carta selecionada como custo
+            Duel.Destroy(sg,REASON_COST) -- Aqui, a destruição acontece como custo
+
+            -- Aqui, você pode adicionar a lógica adicional para lidar com a Invocação Ritual
+            local ritual_cards = Duel.GetMatchingGroup(s.ritualfil,tp,LOCATION_HAND|LOCATION_GRAVE|LOCATION_REMOVED,0,nil,e,tp)
+            if #ritual_cards > 0 then
+                local tc = ritual_cards:Select(tp,1,1,nil):GetFirst()
+                Duel.RitualSummon(e,tp,tc,nil) -- Invoca o monstro Ritual
+                if sg:GetFirst():GetCode() == 61441708 then
+                    Duel.Draw(tp,4,REASON_EFFECT) -- Compra 4 cartas se o ID for 61441708
+                end
             end
         end
     end
-end
-
--- Check if "Connector of Nephthys" or "Sacred Phoenix of Nephthys" was destroyed
-function s.drawfilter(c)
-    return c:IsCode(14139645) or c:IsCode(75285069) -- Connector of Nephthys and Sacred Phoenix of Nephthys
 end

@@ -2,15 +2,12 @@
 local s,id=GetID()
 function s.initial_effect(c)
 
-    -- Activate
-    local e0=Effect.CreateEffect(c)
-    e0:SetType(EFFECT_TYPE_ACTIVATE)
-    e0:SetCode(EVENT_FREE_CHAIN)
-    c:RegisterEffect(e0)
+
     -- Activate "Nephthys" Spell/Trap from hand
     local e1=Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
     e1:SetCode(EFFECT_QP_ACT_IN_NTPHAND)
+    e1:SetCode(EVENT_FREE_CHAIN)
     e1:SetRange(LOCATION_MZONE)
     e1:SetTarget(aux.TargetBoolFunction(Card.IsSetCard,0x11f))
     e1:SetTargetRange(LOCATION_HAND,0)
