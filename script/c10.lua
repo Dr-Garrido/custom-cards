@@ -1,11 +1,13 @@
--- Nephthys Shrine of Reincarnation
+-- Hadou
 local s,id=GetID()
 function s.initial_effect(c)
-    -- Activate WIND "Nephthys" Ritual Monsters' effects as Quick Effects in GY
+    -- Activate LIGHT "Hadou" Monsters' effects as Quick Effects in GY
+    
+    -- Activate
     local e0=Effect.CreateEffect(c)
-    e0:SetType(EFFECT_TYPE_ACTIVATE)
-    e0:SetCode(EVENT_FREE_CHAIN)
-    c:RegisterEffect(e0)
+	e0:SetType(EFFECT_TYPE_ACTIVATE)
+	e0:SetCode(EVENT_FREE_CHAIN)
+	c:RegisterEffect(e0)
 
     local e1=Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
@@ -15,7 +17,7 @@ function s.initial_effect(c)
     e1:SetTarget(s.qetg)
     c:RegisterEffect(e1)
 
-    -- If you control a monster in the Extra Monster Zone that is not a "Nephthys" monster, banish this card and all monsters you control
+    -- If you control a monster in the Extra Monster Zone that is not a "Hadou" monster, banish this card and all monsters you control
     local e2=Effect.CreateEffect(c)
     e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
     e2:SetRange(LOCATION_SZONE)
@@ -24,7 +26,7 @@ function s.initial_effect(c)
     e2:SetOperation(s.rmop)
     c:RegisterEffect(e2)
 
-    -- Destroy 1 card in your hand, OR if destroyed by card effect, add 1 "Nephthys" Spell/Trap
+    -- Destroy 1 card in your hand, OR if destroyed by card effect, add 1 "Hadou" Spell/Trap
     local e3=Effect.CreateEffect(c)
     e3:SetCategory(CATEGORY_DESTROY+CATEGORY_TOHAND+CATEGORY_SEARCH)
     e3:SetType(EFFECT_TYPE_IGNITION)
@@ -34,7 +36,7 @@ function s.initial_effect(c)
     e3:SetOperation(s.desop)
     c:RegisterEffect(e3)
 
-    -- If destroyed by card effect, add 1 "Nephthys" Spell/Trap from Deck to hand
+    -- If destroyed by card effect, add 1 "Hadou" Spell/Trap from Deck to hand
     local e4=Effect.CreateEffect(c)
     e4:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)
     e4:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
@@ -46,7 +48,7 @@ function s.initial_effect(c)
     e4:SetOperation(s.thop)
     c:RegisterEffect(e4)
 
-    -- Special Summon 1 "Nephthys" monster if a card in hand or field is destroyed
+    -- Special Summon 1 "Hadou" monster if a card in hand or field is destroyed
     local e5=Effect.CreateEffect(c)
     e5:SetCategory(CATEGORY_SPECIAL_SUMMON)
     e5:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
@@ -60,29 +62,24 @@ function s.initial_effect(c)
     c:RegisterEffect(e5)
 end
 
--- e1: Activate WIND "Nephthys" Ritual Monsters' effects as Quick Effects from the GY
+-- e1: Activate LIGHT "Hadou" Efeect Monsters' effects as Quick Effects from the GY
 function s.qetg(e,c)
     return c:IsSetCard(0x11f) and c:IsType(TYPE_RITUAL) and c:IsAttribute(ATTRIBUTE_WIND)
 end
 
--- e2: If you control a monster in the Extra Monster Zone that is not a "Nephthys" monster, banish this card and all monsters you control
+-- e2: If you control a monster in the Extra Monster Zone that is not a "Hadou" monster, banish this card and all monsters you control
 function s.rmcon(e,tp,eg,ep,ev,re,r,rp)
-    -- Verifica se existe um monstro na Extra Monster Zone que não é um "Nephthys"
-    return Duel.IsExistingMatchingCard(function(c) 
-        return c:IsFaceup() and not c:IsSetCard(0x11f) and c:IsLocation(LOCATION_EXTRA) 
-    end, tp, LOCATION_EXTRA, 0, 1, nil)
+    return Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)>0
+        and Duel.GetFieldGroupCount(tp,LOCATION_MZONE,LOCATION_MZONE)==1
+        and Duel.IsExistingMatchingCard(aux.NOT(Card.IsSetCard),tp,LOCATION_MZONE,LOCATION_MZONE,1,nil,0x11f)
 end
 
 function s.rmop(e,tp,eg,ep,ev,re,r,rp)
-    -- Banish this card and all monsters in the Extra Monster Zone
-    Duel.Banish(e:GetHandler(), REASON_EFFECT)
-    local g = Duel.GetFieldGroup(tp, LOCATION_EXTRA, 0) -- Obtém monstros da Zona Extra
-    if #g > 0 then
-        Duel.Banish(g, REASON_EFFECT)
-    end
+    Duel.Banish(e:GetHandler(),REASON_EFFECT)
+    Duel.Banish(Duel.GetFieldGroup(tp,LOCATION_MZONE,0),REASON_EFFECT)
 end
 
--- e3: Destroy 1 card in hand OR add 1 "Nephthys" Spell/Trap if destroyed by a card effect
+-- e3: Destroy 1 card in hand OR add 1 "Hadou" Spell/Trap if destroyed by a card effect
 function s.destg(e,tp,eg,ep,ev,re,r,rp,chk)
     if chk==0 then return Duel.IsExistingMatchingCard(nil,tp,LOCATION_HAND,0,1,nil) end
     Duel.SetOperationInfo(0,CATEGORY_DESTROY,nil,1,tp,LOCATION_HAND)
@@ -98,14 +95,14 @@ function s.desop(e,tp,eg,ep,ev,re,r,rp)
     end
 end
 
--- e4: Add 1 "Nephthys" Spell/Trap from Deck to hand if destroyed by card effect
+-- e4: Add 1 "Hadou" Spell/Trap a Mosters from Deck to hand if destroyed by card effect
 function s.thcon(e,tp,eg,ep,ev,re,r,rp)
     return r&REASON_EFFECT~=0
 end
 
 function s.thcost(e,tp,eg,ep,ev,re,r,rp,chk)
     if chk==0 then return Duel.CheckLPCost(tp,1000) end
-    Duel.PayLPCost(tp,1000)
+    Duel.PayLPCost(tp,3000)
 end
 
 function s.thtg(e,tp,eg,ep,ev,re,r,rp,chk)
@@ -126,9 +123,9 @@ function s.thop(e,tp,eg,ep,ev,re,r,rp)
     end
 end
 
--- e5: Special Summon 1 "Nephthys" monster if a card in hand or field is destroyed
+-- e5: Special Summon 1 "Hadou" monster if a card in hand or field is destroyed (except by this card's effect)
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
-    return eg:IsExists(s.spfilter,1,nil,tp) and (not re or re:GetHandler()~=e:GetHandler())
+    return eg:IsExists(s.spfilter,1,nil,tp) and not re or re:GetHandler()~=e:GetHandler()
 end
 
 function s.spfilter(c,tp)
@@ -152,3 +149,4 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
         Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)
     end
 end
+
