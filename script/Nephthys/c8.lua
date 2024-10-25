@@ -29,6 +29,7 @@ function s.initial_effect(c)
     e2:SetCountLimit(1,id+100)
     c:RegisterEffect(e2)
 end
+s.listed_series={0x11f}  -- Série Nephthys
 
 -- Condição para Invocar 2 monstros "Nephthys"
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
