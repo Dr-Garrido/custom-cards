@@ -16,7 +16,7 @@ function s.initial_effect(c)
     e2:SetOperation(s.thop)
     c:RegisterEffect(e2)
 end
-
+s.listed_names={id}
 s.listed_series={0x11f}  -- Série Nephthys
 function s.ritualfil(c)
     return c:IsSetCard(0x11f) and c:IsRitualMonster()  -- Apenas monstros Ritual "Nephthys"

@@ -8,8 +8,7 @@ function s.initial_effect(c)
 	e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)
 	c:RegisterEffect(e1)
 	Duel.AddCustomActivityCounter(id,ACTIVITY_SPSUMMON,s.counterfilter)
-    -----------------
-
+    -----------
 
 
 	-- Banir do cemitério e invocar um monstro "Luzlunar" do cemitério ou banido

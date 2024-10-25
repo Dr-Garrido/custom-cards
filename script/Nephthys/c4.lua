@@ -30,14 +30,7 @@ function s.initial_effect(c)
     e3:SetTarget(s.sptg)
     e3:SetOperation(s.spop)
     c:RegisterEffect(e3)
-
-    -- Você pode controlar apenas 1 "Wrath of Nephthys"
-    local e4=Effect.CreateEffect(c)
-    e4:SetType(EFFECT_TYPE_SINGLE)
-    e4:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
-    e4:SetCode(EFFECT_MAXIMUM)
-    e4:SetValue(1)
-    c:RegisterEffect(e4)
+    
 end
 
 -- e1: Alvo para ativação de "Nephthys" Spell/Trap Cards da mão

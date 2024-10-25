@@ -6,7 +6,7 @@ local s,id=GetID()
 function s.initial_effect(c)
     c:EnableReviveLimit()
     --Fusion Summon procedure (Any monster can be used as Fusion Material)
-    Fusion.AddProcMixRep(c,true,true,aux.FilterBoolFunctionEx(Card.IsType,TYPE_MONSTER),2,99)
+    Fusion.AddProcMixRep(c,true,true,aux.FilterBoolFunctionEx(Card.IsType,TYPE_MONSTER),1,99)
     --Inflict 500 damage to your opponent for each Fusion Material
     local e1=Effect.CreateEffect(c)
     e1:SetDescription(aux.Stringid(id,0))
