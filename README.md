@@ -1,4 +1,4 @@
-### custom-cards
+# custom-cards
 ## **custom-cards** for EDOpro
 
 Para adicionar este repositório ao EDOpro, você precisa adicionar as seguintes configurações em "config.json"
